@@ -1,0 +1,137 @@
+services:
+  traefik:
+    image: traefik
+    container_name: traefik
+    command:
+      - "--api.insecure=true"
+      - "--providers.docker"
+      - "--entrypoints.postgres.address=:5432"
+      - "--log.level=DEBUG"
+      - "--log.format=json"
+      - "--log.filePath=/traefik.log"
+      - "--accesslog=true"
+      - "--accesslog.filepath=/traefik_access.log" 
+    ports:
+      # - "5432:5432"  # Expose Postgres through Traefik
+      - "8080:8080"  # Traefik dashboard
+    networks:
+      - pg-cluster-net
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+
+
+  master-db:
+    image: postgres:latest
+    container_name: master-db
+    environment:
+      POSTGRES_USER: myuser
+      POSTGRES_PASSWORD: mypassword
+      POSTGRES_DB: mydb #succeedex
+    volumes:
+      - master_data:/var/lib/postgresql/data
+      - ./pg-init-scripts:/docker-entrypoint-initdb.d/ 
+    networks:
+      - pg-cluster-net
+    command: postgres -c wal_level=replica -c max_wal_senders=3 -c max_replication_slots=3
+    #  "host    replication    myuser    0.0.0.0/0    trust" add this in "/var/lib/postgresql/data/pg_hba.conf"
+    #   psql -U myuser -d mydb -c "SELECT * FROM pg_stat_replication;" to check node of database
+    labels:
+    - "traefik.enable=true"
+    - "traefik.tcp.routers.master-db.rule=HostSNI(`master.db`)"
+    - "traefik.tcp.routers.master-db.entrypoints=postgres"
+    - "traefik.tcp.routers.master-db.service=master-db"
+    - "traefik.tcp.routers.master-db.tls=true"  # Enable TLS
+    - "traefik.tcp.routers.master-db.tls.certresolver=myresolver"  # Use a cert resolver for auto-certs (e.g., Let's Encrypt)
+    - "traefik.tcp.services.master-db.loadbalancer.server.port=5432"
+  slave-db:
+    image: postgres:latest
+    container_name: slave-db
+    depends_on:
+      - master-db
+    environment:
+      POSTGRES_USER: myslave
+      POSTGRES_PASSWORD: mypassword
+      POSTGRES_DB: mydb
+    networks:
+      - pg-cluster-net
+    volumes:
+      - slave_data:/var/lib/postgresql/data
+    command: >
+      bash -c "
+        apt update && apt install inetutils-ping;
+        until ping -c1 master-db; do sleep 1; done;
+        rm -rf /var/lib/postgresql/data/*;
+        PGPASSWORD=mypassword pg_basebackup -h master-db -D /var/lib/postgresql/data -U myuser -Fp -Xs -P -R;
+        chown -R postgres:postgres /var/lib/postgresql/data;
+        chmod 700 /var/lib/postgresql/data;
+        exec gosu postgres postgres"
+    labels:
+    - "traefik.enable=true"
+    - "traefik.tcp.routers.slave-db.rule=HostSNI(`slave.db`)"
+    - "traefik.tcp.routers.slave-db.entrypoints=postgres"
+    - "traefik.tcp.routers.slave-db.service=slave-db"
+    - "traefik.tcp.routers.slave-db.tls=true"  # Enable TLS
+    - "traefik.tcp.routers.slave-db.tls.certresolver=myresolver"  # Use a cert resolver for auto-certs (e.g., Let's Encrypt)
+    - "traefik.tcp.services.slave-db.loadbalancer.server.port=5432"
+
+  slave-db-2:
+    image: postgres:latest
+    container_name: slave-db-2
+    depends_on:
+      - master-db
+    environment:
+      POSTGRES_USER: myslave
+      POSTGRES_PASSWORD: mypassword
+      POSTGRES_DB: mydb
+    networks:
+      - pg-cluster-net
+    volumes:
+      - slave_data:/var/lib/postgresql/data
+    command: >
+      bash -c "
+        apt update && apt install inetutils-ping;
+        until ping -c1 master-db; do sleep 1; done;
+        rm -rf /var/lib/postgresql/data/*;
+        PGPASSWORD=mypassword pg_basebackup -h master-db -D /var/lib/postgresql/data -U myuser -Fp -Xs -P -R;
+        chown -R postgres:postgres /var/lib/postgresql/data;
+        chmod 700 /var/lib/postgresql/data;
+        exec gosu postgres postgres"
+    labels:
+    - "traefik.enable=true"
+    - "traefik.tcp.routers.slave-db.rule=HostSNI(`slave.db`)"
+    - "traefik.tcp.routers.slave-db.entrypoints=postgres"
+    - "traefik.tcp.routers.slave-db.service=slave-db"
+    - "traefik.tcp.routers.slave-db.tls=true"  # Enable TLS
+    - "traefik.tcp.routers.slave-db.tls.certresolver=myresolver"  # Use a cert resolver for auto-certs (e.g., Let's Encrypt)
+    - "traefik.tcp.services.slave-db.loadbalancer.server.port=5432"
+
+  backend:
+    build:  # This tells Docker Compose to build the image
+      context: ./backend  # Path to your Dockerfile
+      dockerfile: Dockerfile  # (Optional) name of the Dockerfile, defaults to 'Dockerfile'
+    container_name: backend
+    hostname: backend
+    networks:
+      - pg-cluster-net
+
+  adminer:
+    container_name: "adminer"
+    image: adminer:latest
+    hostname: "adminer"
+    restart: always
+    environment:
+      ADMINER_DESIGN: 'dracula'
+      ADMINER_DEFAULT_SERVER: 'master-db'
+    links:
+      - master-db
+    networks:
+      - pg-cluster-net
+
+
+volumes:
+  master_data:
+  slave_data:
+
+networks:
+  pg-cluster-net:
+    driver: bridge

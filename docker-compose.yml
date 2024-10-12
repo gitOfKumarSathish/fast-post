@@ -1,0 +1,124 @@
+services:
+  traefik:
+    image: traefik
+    container_name: traefik
+    command:
+      - "--api.insecure=true"
+      - "--providers.docker"
+      - "--entrypoints.postgres.address=:5432"
+      - "--log.level=DEBUG"
+      - "--log.format=json"
+      - "--log.filePath=/traefik.log"
+      - "--accesslog=true"
+      - "--accesslog.filepath=/traefik_access.log"
+    ports:
+      - "8080:8080"  # Traefik dashboard
+    networks:
+      - pg-cluster-net
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+
+  master-db:
+    build:
+      context: ./masterdb
+      dockerfile: Dockerfile
+    container_name: master-db
+    depends_on:
+      - traefik
+    environment:
+      POSTGRES_USER: myuser
+      POSTGRES_PASSWORD: mypassword
+      POSTGRES_DB: mydb
+    volumes:
+      - master_data:/var/lib/postgresql/data
+    networks:
+      - pg-cluster-net
+    labels:
+      - "traefik.enable=true"
+      - "traefik.tcp.routers.master-db.rule=HostSNI(`master.db`)"
+      - "traefik.tcp.routers.master-db.entrypoints=postgres"
+      - "traefik.tcp.routers.master-db.service=master-db"
+      - "traefik.tcp.routers.master-db.tls=true"
+      - "traefik.tcp.routers.master-db.tls.certresolver=myresolver"
+      - "traefik.tcp.services.master-db.loadbalancer.server.port=5432"
+
+  adminer:
+    container_name: "adminer"
+    image: adminer:latest
+    hostname: "adminer"
+    depends_on:
+      - master-db
+    restart: always
+    environment:
+      ADMINER_DESIGN: 'dracula'
+      ADMINER_DEFAULT_SERVER: 'master-db'
+    networks:
+      - pg-cluster-net
+
+  slave-db:
+    build:
+      context: ./slavedb
+      dockerfile: Dockerfile
+    container_name: slave-db
+    depends_on:
+      - master-db
+      - adminer
+    environment:
+      POSTGRES_USER: myuser
+      POSTGRES_PASSWORD: mypassword
+      POSTGRES_DB: mydb
+    networks:
+      - pg-cluster-net
+    labels:
+      - "traefik.enable=true"
+      - "traefik.tcp.routers.slave-db.rule=HostSNI(`slave.db`)"
+      - "traefik.tcp.routers.slave-db.entrypoints=postgres"
+      - "traefik.tcp.routers.slave-db.service=slave-db"
+      - "traefik.tcp.routers.slave-db.tls=true"
+      - "traefik.tcp.routers.slave-db.tls.certresolver=myresolver"
+      - "traefik.tcp.services.slave-db.loadbalancer.server.port=5432"
+
+  slave-db-2:
+    build:
+      context: ./slavedb
+      dockerfile: Dockerfile
+    container_name: slave-db-2
+    depends_on:
+      - master-db
+      - adminer
+      - slave-db
+    environment:
+      POSTGRES_USER: myuser
+      POSTGRES_PASSWORD: mypassword
+      POSTGRES_DB: mydb
+    networks:
+      - pg-cluster-net
+    labels:
+      - "traefik.enable=true"
+      - "traefik.tcp.routers.slave-db.rule=HostSNI(`slave.db`)"
+      - "traefik.tcp.routers.slave-db.entrypoints=postgres"
+      - "traefik.tcp.routers.slave-db.service=slave-db"
+      - "traefik.tcp.routers.slave-db.tls=true"
+      - "traefik.tcp.routers.slave-db.tls.certresolver=myresolver"
+      - "traefik.tcp.services.slave-db.loadbalancer.server.port=5432"
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: backend
+    hostname: backend
+    depends_on:
+      - traefik
+      - slave-db
+      - slave-db-2
+    networks:
+      - pg-cluster-net
+
+volumes:
+  master_data:
+  slave_data:
+
+networks:
+  pg-cluster-net:
+    driver: bridge
