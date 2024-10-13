@@ -17,6 +17,7 @@ services:
       - pg-cluster-net
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
+    restart: on-failure  # Add this line to restart on failure
 
   master-db:
     build:
@@ -41,6 +42,7 @@ services:
       - "traefik.tcp.routers.master-db.tls=true"
       - "traefik.tcp.routers.master-db.tls.certresolver=myresolver"
       - "traefik.tcp.services.master-db.loadbalancer.server.port=5432"
+    restart: on-failure  # Add this line to restart on failure
 
   adminer:
     container_name: "adminer"
@@ -53,7 +55,7 @@ services:
       ADMINER_DESIGN: 'dracula'
       ADMINER_DEFAULT_SERVER: 'master-db'
     networks:
-      - pg-cluster-net
+      - pg-cluster-net  # Add this line to restart on failure
 
   slave-db:
     build:
@@ -77,6 +79,7 @@ services:
       - "traefik.tcp.routers.slave-db.tls=true"
       - "traefik.tcp.routers.slave-db.tls.certresolver=myresolver"
       - "traefik.tcp.services.slave-db.loadbalancer.server.port=5432"
+    restart: on-failure  # Add this line to restart on failure
 
   slave-db-2:
     build:
@@ -101,6 +104,7 @@ services:
       - "traefik.tcp.routers.slave-db.tls=true"
       - "traefik.tcp.routers.slave-db.tls.certresolver=myresolver"
       - "traefik.tcp.services.slave-db.loadbalancer.server.port=5432"
+    restart: on-failure  # Add this line to restart on failure
 
   backend:
     build:
@@ -114,6 +118,7 @@ services:
       - slave-db-2
     networks:
       - pg-cluster-net
+    restart: on-failure  # Add this line to restart on failure
 
 volumes:
   master_data:
