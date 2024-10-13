@@ -9,7 +9,7 @@ ENV POSTGRES_DB=mydb
 # Copy the custom script to append configuration to pg_hba.conf
 COPY ./init.sh /docker-entrypoint-initdb.d/init.sh
 RUN chmod +x /docker-entrypoint-initdb.d/init.sh
-
+COPY pg_hba.conf /var/lib/postgresql/data/
 # Copy custom pg_hba.conf file
 COPY ./pg_hba.conf /docker-entrypoint-initdb.d/pg_hba.conf
 
