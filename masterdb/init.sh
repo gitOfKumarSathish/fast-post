@@ -1,6 +1,5 @@
 #!/bin/bash
-# Check if the pg_hba.conf file exists, and if it does, append the replication line
-
-echo "Appending replication configuration to pg_hba.conf"
-
-echo "host    replication    myuser    0.0.0.0/0    trust" >> /var/lib/postgresql/data/pg_hba.conf
+# Append to pg_hba.conf after the data directory is initialized
+if [ -f "/var/lib/postgresql/data/pg_hba.conf" ]; then
+  echo "host    replication    myuser    0.0.0.0/0    trust" >> /var/lib/postgresql/data/pg_hba.conf
+fi
