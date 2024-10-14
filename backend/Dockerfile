@@ -1,5 +1,5 @@
 FROM python:3.11-slim
-
+ARG GITLAB_ACCESS_TOKEN
 # Install necessary packages including ping
 RUN apt update && apt install -y git libpq-dev build-essential inetutils-ping
 
@@ -7,10 +7,12 @@ RUN apt update && apt install -y git libpq-dev build-essential inetutils-ping
 WORKDIR /app
 
 # Clone the repository
-RUN git clone https://github.com/Anish13kumar/Fastapi_PostgreSQL .
+# RUN git clone https://github.com/Anish13kumar/Fastapi_PostgreSQL .
+
+RUN git clone https://oauth2:$GITLAB_ACCESS_TOKEN@gitlab.com/succeedex/backend-crm.git /app
 
 # Install Python dependencies
-RUN pip install -r requirement.txt
+RUN pip install -r requirements.txt
 
 # Copy the script into the container
 COPY traefik.sh /usr/local/bin/traefik.sh
