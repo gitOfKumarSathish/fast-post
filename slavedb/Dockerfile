@@ -1,9 +1,6 @@
 # Use the official PostgreSQL image as the base
-FROM postgres:latest
-
-# Install ping (part of inetutils-ping)
-RUN apt-get update && apt-get install -y inetutils-ping
-
+FROM postgres:alpine
+RUN apk add --no-cache git postgresql-dev
 # Set environment variables (can also be overridden at runtime if needed)
 ENV POSTGRES_USER=myuser
 ENV POSTGRES_PASSWORD=mypassword

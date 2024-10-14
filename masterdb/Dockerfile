@@ -1,5 +1,5 @@
 # Use the official Postgres image as the base
-FROM postgres:latest
+FROM postgres:alpine
 
 # Set environment variables for Postgres (these will be overwritten by Docker Compose)
 ENV POSTGRES_USER=myuser
