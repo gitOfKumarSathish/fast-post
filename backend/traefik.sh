@@ -1,5 +1,6 @@
 #!/bin/bash
-
+export POSTGRESQL_DATABASE_MASTER_URL=postgresql+asyncpg://myuser:mypassword@master.db/mydb
+export POSTGRESQL_DATABASE_SLAVE_URL=postgresql+asyncpg://myuser:mypassword@slave.db/mydb
 # Hostnames of the Traefik services
 MASTER_HOSTNAME="traefik"
 
