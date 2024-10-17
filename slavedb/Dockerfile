@@ -2,10 +2,13 @@
 FROM postgres:alpine
 RUN apk add --no-cache git postgresql-dev
 # Set environment variables (can also be overridden at runtime if needed)
-ENV POSTGRES_USER=myuser
-ENV POSTGRES_PASSWORD=mypassword
-ENV POSTGRES_DB=mydb
-
+ARG POSTGRES_USER
+ARG POSTGRES_PASSWORD
+ARG POSTGRES_DB
+# Set environment variables for Postgres (these will be overwritten by Docker Compose)
+ENV POSTGRES_USER=$POSTGRES_USER
+ENV POSTGRES_PASSWORD=$POSTGRES_PASSWORD
+ENV POSTGRES_DB=$POSTGRES_DB
 # Copy any needed initialization or entry scripts, if required (not used here for simplicity)
 # COPY ./init-scripts /docker-entrypoint-initdb.d/
 

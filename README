@@ -1,0 +1,136 @@
+Here's a well-structured `README.md` file to accompany your Docker automation project:
+
+---
+
+# Docker Automation Script
+
+This project automates the process of building and managing Docker services using `docker-compose`. The script builds multiple containers, including a master and slave database, a backend service, and ensures everything runs seamlessly.
+
+## Table of Contents
+
+- [Prerequisites](#prerequisites)
+- [Installation](#installation)
+- [Project Structure](#project-structure)
+- [Usage](#usage)
+- [Environment Variables](#environment-variables)
+- [Scripts Overview](#scripts-overview)
+- [Troubleshooting](#troubleshooting)
+- [License](#license)
+
+## Prerequisites
+
+Ensure the following software is installed on your system:
+
+- [Python 3.x](https://www.python.org/downloads/)
+- [Docker](https://docs.docker.com/get-docker/)
+- [Docker Compose](https://docs.docker.com/compose/)
+- [pip](https://pip.pypa.io/en/stable/installation/)
+- Install `python-dotenv` via pip:
+  ```bash
+  pip install python-dotenv
+  ```
+
+## Installation
+
+1. Clone this repository to your local machine:
+   ```bash
+   git clone <your-repo-url>
+   cd <your-repo-folder>
+   ```
+
+2. Create a `.env` file in the project directory. See the [Environment Variables](#environment-variables) section for details.
+
+3. Ensure Docker is running on your system.
+
+## Project Structure
+
+```bash
+.
+├── docker-compose.yml    # Docker Compose configuration
+├── main_script.py        # Main Python script to build and run services
+├── .env                  # Environment variables (not tracked by Git)
+└── README.md             # Documentation
+```
+
+## Usage
+
+1. **Set Up Environment Variables**:  
+   Fill in the necessary values in the `.env` file (see [Environment Variables](#environment-variables)).
+
+2. **Run the Script**:
+   Execute the following command to start the Docker automation:
+   ```bash
+   python main_script.py
+   ```
+
+3. **Check Running Containers**:  
+   Use this command to ensure everything is running:
+   ```bash
+   docker ps
+   ```
+
+4. **Stop All Services**:
+   To stop and remove the services:
+   ```bash
+   docker compose down
+   ```
+
+## Environment Variables
+
+The script relies on environment variables stored in a `.env` file. Here’s the template:
+
+```bash
+# .env
+
+POSTGRES_USER={POSTGRES_USER}
+POSTGRES_PASSWORD={POSTGRES_PASSWORD}
+POSTGRES_DB={POSTGRES_DB}
+GITLAB_ACCESS_TOKEN={GITLAB_ACCESS_TOKEN}
+```
+
+- **POSTGRES_USER**: Username for the PostgreSQL databases.
+- **POSTGRES_PASSWORD**: Password for the PostgreSQL databases.
+- **POSTGRES_DB**: Name of the PostgreSQL database.
+- **GITLAB_ACCESS_TOKEN**: GitLab access token used for backend builds.
+
+## Scripts Overview
+
+### 1. `build_masterDB()`
+Builds the Docker image for the master database with the provided environment variables.
+
+### 2. `build_slaveDB()`
+Builds the Docker image for the slave database.
+
+### 3. `build_backend()`
+Builds the backend container using the GitLab access token.
+
+### 4. `docker_compose_up()`
+Starts all services using `docker-compose up`.
+
+### 5. `execute_in_container()`
+Executes a script (`traefik.sh`) inside the backend container.
+
+## Troubleshooting
+
+- **Docker Permission Issues**:  
+  If you encounter permission issues, try running Docker commands with `sudo`:
+  ```bash
+  sudo python main_script.py
+  ```
+
+- **Failed Docker Builds**:  
+  Ensure Docker is installed and running. Check if the `.env` file is properly configured with the correct credentials.
+
+- **Services Not Starting**:  
+  Use the following command to view logs:
+  ```bash
+  docker compose logs
+  ```
+
+## License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+---
+
+This `README.md` provides clear guidance on how to set up, use, and troubleshoot your project. You can adjust the content based on your needs or add more sections if required.

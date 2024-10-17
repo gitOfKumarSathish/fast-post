@@ -1,14 +1,37 @@
 FROM python:3.11-alpine
+
+# Define the GitLab access token as a build argument
 ARG GITLAB_ACCESS_TOKEN
-RUN apk add --no-cache git postgresql-dev 
-ENV POSTGRESQL_DATABASE_MASTER_URL="postgresql+asyncpg://myuser:mypassword@master.db/mydb"
-ENV POSTGRESQL_DATABASE_SLAVE_URL="postgresql+asyncpg://myuser:mypassword@slave.db/mydb"
-WORKDIR /app
-# RUN git clone https://oauth2:$GITLAB_ACCESS_TOKEN@gitlab.com/succeedex/backend-crm.git /app
-RUN git clone https://github.com/Anish13kumar/Fastapi_PostgreSQL .
-RUN pip install -r requirement.txt
+
+# Install necessary packages
+RUN apk add --no-cache git postgresql-dev shadow
+
+# Create the new user 'succeedEx' and set up environment
+RUN useradd -m succeedEx 
+
+# Set necessary environment variables
+ENV POSTGRESQL_DATABASE_MASTER_URL="postgresql+asyncpg://myuser:mypassword@master.db/mydb" \
+    POSTGRESQL_DATABASE_SLAVE_URL="postgresql+asyncpg://myuser:mypassword@slave.db/mydb"
+
+# Set the working directory to the new user’s home
+WORKDIR /home/succeedEx/
+
+# Switch to the succeedEx user for the next operations
+USER succeedEx
+RUN chown succeedEx:succeedEx /home/succeedEx/
+# Clone the GitHub repository into the user’s home directory
+# RUN git clone https://oauth2:$GITLAB_ACCESS_TOKEN@gitlab.com/succeedex/backend-crm.git /home/succeedEx/backend/
+RUN git clone https://github.com/Anish13kumar/Fastapi_PostgreSQL /home/succeedEx/backend/
+
+# Switch back to root to install dependencies
+RUN pip install -r /home/succeedEx/backend/requirements.txt
+
+USER root
+# Copy and configure the Traefik script
 COPY traefik.sh /usr/local/bin/traefik.sh
 RUN chmod +x /usr/local/bin/traefik.sh
-CMD ["/usr/local/bin/traefik.sh"]
+# Set the succeedEx user as the default for running the container
+# Default command to run the container
+USER succeedEx
+CMD ["tail", "-f", "/dev/null"]
 
-#docker compose build backend  --build-arg GITLAB_ACCESS_TOKEN=<token> --no-cache
