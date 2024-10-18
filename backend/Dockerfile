@@ -2,6 +2,9 @@ FROM python:3.11-alpine
 
 # Define the GitLab access token as a build argument
 ARG GITLAB_ACCESS_TOKEN
+ARG POSTGRES_USER
+ARG POSTGRES_PASSWORD
+ARG POSTGRES_DB
 
 # Install necessary packages
 RUN apk add --no-cache git postgresql-dev shadow
@@ -10,8 +13,8 @@ RUN apk add --no-cache git postgresql-dev shadow
 RUN useradd -m succeedEx 
 
 # Set necessary environment variables
-ENV POSTGRESQL_DATABASE_MASTER_URL="postgresql+asyncpg://myuser:mypassword@master.db/mydb" \
-    POSTGRESQL_DATABASE_SLAVE_URL="postgresql+asyncpg://myuser:mypassword@slave.db/mydb"
+ENV POSTGRESQL_DATABASE_MASTER_URL="postgresql+asyncpg://$POSTGRES_USER:$POSTGRES_PASSWORD@master.db/$POSTGRES_DB" \
+    POSTGRESQL_DATABASE_SLAVE_URL="postgresql+asyncpg://$POSTGRES_USER:$POSTGRES_PASSWORD@master.db/$POSTGRES_DB"
 
 # Set the working directory to the new user’s home
 WORKDIR /home/succeedEx/

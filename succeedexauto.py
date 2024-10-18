@@ -50,7 +50,9 @@ def build_backend():
     """Build the backend Docker container."""
     print("Building the backend container...")
     run_command(
-        f"docker compose build backend --build-arg GITLAB_ACCESS_TOKEN={GITLAB_ACCESS_TOKEN} --no-cache"
+        f"docker compose build backend --build-arg GITLAB_ACCESS_TOKEN={GITLAB_ACCESS_TOKEN} "
+        f"--build-arg POSTGRES_USER={POSTGRES_USER} " 
+        f"--build-arg POSTGRES_DB={POSTGRES_DB} --no-cache"
     )
 
 def docker_compose_up():
